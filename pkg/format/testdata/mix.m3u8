@@ -1,0 +1,9 @@
+#EXTM3U
+#PLAYLIST:Evening Mix
+#EXTINF:245,Example Artist - Opening
+/data/music/Example Artist/First Album/01 Opening.flac
+# a stray comment
+
+#EXTINF:-1,No Duration
+relative/track.mp3
+/data/music/bare.ogg

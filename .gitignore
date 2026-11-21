@@ -1,0 +1,21 @@
+# build output
+/dist/
+*.exe
+*.aar
+*-sources.jar
+/gobbler
+/playlist-gobbler-aimp
+
+# local config and secrets: never commit
+.env
+.env.*
+gobbler.toml
+gobbler.json
+*.secret
+
+# editors / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db

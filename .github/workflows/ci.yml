@@ -1,0 +1,123 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  core-test:
+    name: core test (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, ubuntu-24.04-arm]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: gofmt
+        if: runner.os != 'Windows'
+        run: test -z "$(gofmt -l .)" || (gofmt -l . && exit 1)
+      - run: go vet ./...
+      - run: go test -race ./...
+        if: runner.os != 'Windows'
+      - run: go test ./...
+        if: runner.os == 'Windows'
+
+  cross:
+    name: build ${{ matrix.goos }}/${{ matrix.goarch }}
+    needs: core-test
+    runs-on: ubuntu-latest
+    continue-on-error: ${{ matrix.best_effort }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { goos: linux,   goarch: amd64, best_effort: false }
+          - { goos: linux,   goarch: arm64, best_effort: false }
+          - { goos: windows, goarch: amd64, best_effort: false }
+          - { goos: windows, goarch: arm64, best_effort: false }
+          - { goos: android, goarch: arm64, best_effort: false }
+          - { goos: darwin,  goarch: amd64, best_effort: true }
+          - { goos: darwin,  goarch: arm64, best_effort: true }
+          - { goos: freebsd, goarch: amd64, best_effort: true }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: build
+        env:
+          CGO_ENABLED: "0"
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+        run: |
+          ext=""; [ "$GOOS" = windows ] && ext=".exe"
+          mkdir -p dist
+          for c in gobbler playlist-gobbler-aimp; do
+            go build -trimpath -ldflags "-s -w -X main.version=${GITHUB_SHA::7}" \
+              -o "dist/$c-$GOOS-$GOARCH$ext" "./cmd/$c"
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gobbler-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: dist/*
+
+  android-aar:
+    name: android AAR (gomobile)
+    needs: core-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - name: gomobile bind
+        run: |
+          export ANDROID_NDK_HOME="${ANDROID_NDK_LATEST_HOME:-$ANDROID_NDK_HOME}"
+          go install golang.org/x/mobile/cmd/gomobile@latest
+          go install golang.org/x/mobile/cmd/gobind@latest
+          gomobile init
+          mkdir -p dist
+          gomobile bind -target android/arm64 -androidapi 24 -o dist/gobbler-mobile.aar ./mobile
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gobbler-mobile-aar
+          path: dist/gobbler-mobile.aar
+
+  nextcloud-app:
+    name: nextcloud app
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: playlist-gobbler.nextcloud
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          tools: composer
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: composer validate --no-check-publish
+      - name: validate appinfo/info.xml
+        run: |
+          sudo apt-get install -y -qq libxml2-utils
+          curl -fsSL -o /tmp/info.xsd https://apps.nextcloud.com/schema/apps/info.xsd
+          xmllint --noout --schema /tmp/info.xsd appinfo/info.xml
+      - run: composer install --no-interaction --no-progress
+      - run: composer lint
+      - run: composer test
+      - run: npm run build
+      - run: npm test

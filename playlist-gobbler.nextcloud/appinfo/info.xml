@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<info xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:noNamespaceSchemaLocation="https://apps.nextcloud.com/schema/apps/info.xsd">
+    <id>playlistgobbler</id>
+    <name>Playlist Gobbler</name>
+    <summary>Central playlist repository for AIMP and Jellyfin</summary>
+    <description><![CDATA[Keeps playlists (AIMP .aimppl4, .m3u8, ...) in one Nextcloud folder per user, so desktop and Android players and the Jellyfin plugin all sync from the same source. Part of the gobbler project. Scaffold: no features yet.]]></description>
+    <version>0.1.0</version>
+    <licence>MIT</licence>
+    <author homepage="https://github.com/sys7mfaul7">Shawn Tolley</author>
+    <namespace>PlaylistGobbler</namespace>
+    <category>multimedia</category>
+    <website>https://github.com/sys7mfaul7/gobbler</website>
+    <bugs>https://github.com/sys7mfaul7/gobbler/issues</bugs>
+    <repository type="git">https://github.com/sys7mfaul7/gobbler.git</repository>
+    <dependencies>
+        <php min-version="8.1"/>
+        <nextcloud min-version="30" max-version="33"/>
+    </dependencies>
+</info>

@@ -1,0 +1,15 @@
+{
+  "name": "playlistgobbler",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Frontend for the Playlist Gobbler Nextcloud app (placeholder)",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "build": "node src/build.mjs",
+    "test": "node --test \"src/**/*.test.mjs\""
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
